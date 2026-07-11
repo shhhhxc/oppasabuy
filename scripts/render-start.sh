@@ -3,8 +3,32 @@ set -e
 
 PORT="${PORT:-10000}"
 
-sed -ri "s/Listen 80/Listen ${PORT}/g; s/Listen 10000/Listen ${PORT}/g" /etc/apache2/ports.conf
-sed -ri "s/<VirtualHost \*:[0-9]+>/<VirtualHost *:${PORT}>/g" /etc/apache2/sites-available/000-default.conf
+echo "Starting Oppasabuy on 0.0.0.0:${PORT}"
+
+cat > /etc/apache2/ports.conf <<EOF
+Listen 0.0.0.0:${PORT}
+EOF
+
+cat > /etc/apache2/sites-available/000-default.conf <<EOF
+<VirtualHost 0.0.0.0:${PORT}>
+    ServerName _
+    DocumentRoot /var/www/html/public
+
+    <Directory /var/www/html/public>
+        Options FollowSymLinks
+        AllowOverride All
+        Require all granted
+
+        RewriteEngine On
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteRule ^ index.php [L]
+    </Directory>
+
+    ErrorLog /proc/self/fd/2
+    CustomLog /proc/self/fd/1 combined
+</VirtualHost>
+EOF
 
 cd /var/www/html
 
@@ -31,5 +55,7 @@ php artisan migrate --force
 
 php artisan config:cache
 php artisan view:cache
+
+apache2ctl configtest
 
 exec apache2-foreground
