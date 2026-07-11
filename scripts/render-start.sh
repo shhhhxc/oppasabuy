@@ -48,7 +48,7 @@ chmod -R ug+rwX storage bootstrap/cache
 rm -f bootstrap/cache/config.php
 
 php artisan optimize:clear
-php artisan migrate --force
+#php artisan migrate --force
 php artisan config:cache
 php artisan view:cache
 
