@@ -26,7 +26,7 @@ services:
         value: info
       - key: DB_CONNECTION
         value: pgsql
-      - key: DATABASE_URL
+      - key: DB_URL
         fromDatabase:
           name: oppasabuy-db
           property: connectionString
