@@ -308,14 +308,22 @@
                         <div class="flex-1 bg-gray-50 rounded-[2.5rem] p-2 flex items-center border border-gray-100 focus-within:border-[#0d47a1] focus-within:bg-white transition-all shadow-inner">
                             
                             <div class="flex items-center px-2">
-                                <label class="cursor-pointer p-2 text-gray-400 hover:text-[#0d47a1] transition-colors" title="Upload Video">
+                                <button type="button"
+                                        onclick="openChatCamera('video')"
+                                        class="cursor-pointer p-2 text-gray-400 hover:text-[#0d47a1] transition-colors bg-transparent border-0"
+                                        title="Record Video">
                                     <i class="bi bi-camera-video-fill text-2xl"></i>
-                                    <input type="file" name="attachment" id="chat-video" class="hidden" accept="video/*" onchange="previewFileName(this)">
-                                </label>
-                                <label class="cursor-pointer p-2 text-gray-400 hover:text-[#0d47a1] transition-colors border-l border-gray-200" title="Upload Image">
-                                    <i class="bi bi-image-fill text-2xl"></i>
-                                    <input type="file" name="image" id="chat-img" class="hidden" accept="image/*" onchange="previewFileName(this)">
-                                </label>
+                                </button>
+
+                                <button type="button"
+                                        onclick="openChatCamera('photo')"
+                                        class="cursor-pointer p-2 text-gray-400 hover:text-[#0d47a1] transition-colors border-0 border-l border-gray-200 bg-transparent"
+                                        title="Take Photo">
+                                    <i class="bi bi-camera-fill text-2xl"></i>
+                                </button>
+
+                                <input type="file" name="attachment" id="chat-video" class="hidden" accept="video/*">
+                                <input type="file" name="image" id="chat-img" class="hidden" accept="image/*">
                             </div>
 
                             <input type="text" name="message" autocomplete="off" placeholder="Type a message..." 
@@ -354,6 +362,88 @@
                 <p class="text-sm text-gray-400 font-bold mt-2">Select a transaction or a group chat room to start messaging.</p>
             </div>
         @endif
+    </div>
+</div>
+
+
+{{-- CAMERA-ONLY CHAT MODAL --}}
+<div id="chatCameraModal" class="fixed inset-0 z-[100] hidden bg-black/80 backdrop-blur-sm items-center justify-center p-4">
+    <div class="bg-white rounded-[2rem] w-full max-w-2xl overflow-hidden shadow-2xl">
+        <div class="p-5 border-b border-gray-100 flex items-center justify-between">
+            <div>
+                <h3 id="chatCameraTitle" class="text-lg font-black text-gray-900">Camera</h3>
+                <p id="chatCameraSubtitle" class="text-xs font-bold text-gray-400 mt-1">Select a camera and start.</p>
+            </div>
+
+            <button type="button"
+                    onclick="closeChatCamera()"
+                    class="w-10 h-10 rounded-full bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500 border-0 transition">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <div class="p-5">
+            <div class="flex flex-col md:flex-row gap-3 mb-4">
+                <select id="chatCameraSelect"
+                        class="flex-1 rounded-xl border-gray-200 bg-gray-50 font-bold text-sm">
+                    <option value="">Select camera</option>
+                </select>
+
+                <button type="button"
+                        onclick="refreshChatCameras()"
+                        class="px-4 py-3 rounded-xl bg-gray-100 text-gray-700 font-black text-xs border-0 hover:bg-gray-200 transition">
+                    <i class="bi bi-arrow-clockwise me-1"></i> REFRESH
+                </button>
+            </div>
+
+            <div class="relative bg-black rounded-[1.5rem] overflow-hidden aspect-video flex items-center justify-center">
+                <div id="chatCameraPlaceholder" class="text-center text-gray-300 px-6">
+                    <i class="bi bi-camera-video text-5xl block mb-3"></i>
+                    <p class="text-sm font-bold">Allow camera access, select a camera, then press Start Camera.</p>
+                </div>
+
+                <video id="chatCameraVideo" autoplay playsinline muted class="hidden w-full h-full object-cover"></video>
+                <img id="chatPhotoPreview" src="" alt="Captured photo" class="hidden w-full h-full object-contain bg-black">
+                <video id="chatVideoPreview" controls playsinline class="hidden w-full h-full object-contain bg-black"></video>
+
+                <div id="recordingIndicator"
+                     class="hidden absolute top-4 left-4 bg-red-600 text-white px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg">
+                    <span class="inline-block w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></span>
+                    Recording <span id="recordingTimer">00:00</span>
+                </div>
+            </div>
+
+            <div id="chatCameraError"
+                 class="hidden mt-4 rounded-xl border border-red-200 bg-red-50 text-red-600 px-4 py-3 text-xs font-bold">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-5">
+                <button type="button" id="startChatCameraBtn" onclick="startChatCamera()" class="camera-action-btn bg-[#0d47a1] text-white">
+                    <i class="bi bi-camera-video-fill"></i> Start Camera
+                </button>
+
+                <button type="button" id="switchChatCameraBtn" onclick="switchChatCamera()" disabled class="camera-action-btn bg-gray-100 text-gray-700">
+                    <i class="bi bi-arrow-repeat"></i> Switch Camera
+                </button>
+
+                <button type="button" id="captureChatBtn" onclick="captureChatMedia()" disabled class="camera-action-btn bg-red-600 text-white">
+                    <i id="captureChatIcon" class="bi bi-camera-fill"></i>
+                    <span id="captureChatLabel">Take Photo</span>
+                </button>
+
+                <button type="button" id="retakeChatBtn" onclick="retakeChatMedia()" disabled class="camera-action-btn bg-gray-100 text-gray-700">
+                    <i class="bi bi-arrow-counterclockwise"></i> Retake
+                </button>
+            </div>
+
+            <button type="button"
+                    id="useChatMediaBtn"
+                    onclick="useCapturedChatMedia()"
+                    disabled
+                    class="w-full mt-4 py-4 rounded-2xl bg-green-600 text-white font-black text-xs uppercase tracking-widest border-0 disabled:opacity-50">
+                Use This Media
+            </button>
+        </div>
     </div>
 </div>
 
@@ -416,9 +506,437 @@
 @endif
 
 <script>
+    let chatCameraStream = null;
+    let chatCameraDevices = [];
+    let chatCameraMode = 'photo';
+    let chatActiveCameraIndex = 0;
+    let chatCapturedBlob = null;
+    let chatCapturedUrl = null;
+    let chatMediaRecorder = null;
+    let chatRecordedChunks = [];
+    let chatRecordingSeconds = 0;
+    let chatRecordingTimerInterval = null;
+
     function toggleModal(id) {
         const modal = document.getElementById(id);
         if(modal) modal.classList.toggle('hidden');
+    }
+
+    function showChatCameraError(message) {
+        const box = document.getElementById('chatCameraError');
+        box.textContent = message;
+        box.classList.remove('hidden');
+    }
+
+    function clearChatCameraError() {
+        const box = document.getElementById('chatCameraError');
+        box.textContent = '';
+        box.classList.add('hidden');
+    }
+
+    function stopChatCameraStream() {
+        if(chatCameraStream) {
+            chatCameraStream.getTracks().forEach(track => track.stop());
+            chatCameraStream = null;
+        }
+
+        const video = document.getElementById('chatCameraVideo');
+        video.srcObject = null;
+    }
+
+    function resetChatCapturedMedia() {
+        chatCapturedBlob = null;
+
+        if(chatCapturedUrl) {
+            URL.revokeObjectURL(chatCapturedUrl);
+            chatCapturedUrl = null;
+        }
+
+        const photoPreview = document.getElementById('chatPhotoPreview');
+        const videoPreview = document.getElementById('chatVideoPreview');
+
+        photoPreview.src = '';
+        photoPreview.classList.add('hidden');
+
+        videoPreview.pause();
+        videoPreview.removeAttribute('src');
+        videoPreview.load();
+        videoPreview.classList.add('hidden');
+
+        document.getElementById('retakeChatBtn').disabled = true;
+        document.getElementById('useChatMediaBtn').disabled = true;
+    }
+
+    async function openChatCamera(mode) {
+        chatCameraMode = mode;
+        clearChatCameraError();
+        resetChatCapturedMedia();
+
+        const modal = document.getElementById('chatCameraModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        document.getElementById('chatCameraTitle').textContent =
+            mode === 'photo' ? 'Take a Photo' : 'Record a Video';
+
+        document.getElementById('chatCameraSubtitle').textContent =
+            mode === 'photo'
+                ? 'Use your phone camera or computer webcam to take a photo.'
+                : 'Use your phone camera or computer webcam to record a video.';
+
+        document.getElementById('captureChatIcon').className =
+            mode === 'photo' ? 'bi bi-camera-fill' : 'bi bi-record-circle-fill';
+
+        document.getElementById('captureChatLabel').textContent =
+            mode === 'photo' ? 'Take Photo' : 'Start Recording';
+
+        await refreshChatCameras();
+    }
+
+    function closeChatCamera() {
+        if(chatMediaRecorder && chatMediaRecorder.state === 'recording') {
+            chatMediaRecorder.stop();
+        }
+
+        stopChatRecordingTimer();
+        stopChatCameraStream();
+        resetChatCapturedMedia();
+
+        const modal = document.getElementById('chatCameraModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+
+        document.getElementById('chatCameraVideo').classList.add('hidden');
+        document.getElementById('chatCameraPlaceholder').classList.remove('hidden');
+        document.getElementById('captureChatBtn').disabled = true;
+        document.getElementById('retakeChatBtn').disabled = true;
+        document.getElementById('useChatMediaBtn').disabled = true;
+        document.getElementById('recordingIndicator').classList.add('hidden');
+    }
+
+    async function requestChatCameraPermission() {
+        if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            throw new Error('Camera access is not supported by this browser.');
+        }
+
+        const permissionStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: chatCameraMode === 'video'
+        });
+
+        permissionStream.getTracks().forEach(track => track.stop());
+    }
+
+    async function refreshChatCameras() {
+        clearChatCameraError();
+
+        try {
+            await requestChatCameraPermission();
+
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            chatCameraDevices = devices.filter(device => device.kind === 'videoinput');
+
+            const select = document.getElementById('chatCameraSelect');
+            select.innerHTML = '';
+
+            if(chatCameraDevices.length === 0) {
+                select.innerHTML = '<option value="">No camera found</option>';
+                throw new Error('No camera was detected on this device.');
+            }
+
+            chatCameraDevices.forEach((device, index) => {
+                const option = document.createElement('option');
+                option.value = device.deviceId;
+
+                const label = device.label || `Camera ${index + 1}`;
+                const lower = label.toLowerCase();
+
+                if(lower.includes('front') || lower.includes('user')) {
+                    option.textContent = `${label} (Front)`;
+                } else if(lower.includes('rear') || lower.includes('back') || lower.includes('environment')) {
+                    option.textContent = `${label} (Rear)`;
+                } else {
+                    option.textContent = label;
+                }
+
+                select.appendChild(option);
+            });
+
+            chatActiveCameraIndex = 0;
+            select.selectedIndex = 0;
+            document.getElementById('switchChatCameraBtn').disabled = chatCameraDevices.length < 2;
+
+        } catch(error) {
+            showChatCameraError(
+                error.name === 'NotAllowedError'
+                    ? 'Camera permission was denied. Please allow camera and microphone access in your browser settings.'
+                    : error.message
+            );
+        }
+    }
+
+    async function startChatCamera() {
+        clearChatCameraError();
+        resetChatCapturedMedia();
+        stopChatCameraStream();
+
+        try {
+            if(chatCameraDevices.length === 0) {
+                await refreshChatCameras();
+            }
+
+            const select = document.getElementById('chatCameraSelect');
+            const selectedDeviceId = select.value;
+
+            if(!selectedDeviceId) {
+                throw new Error('Please select a camera first.');
+            }
+
+            chatCameraStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    deviceId: { exact: selectedDeviceId },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                },
+                audio: chatCameraMode === 'video'
+            });
+
+            const video = document.getElementById('chatCameraVideo');
+            video.srcObject = chatCameraStream;
+            await video.play();
+
+            document.getElementById('chatCameraPlaceholder').classList.add('hidden');
+            video.classList.remove('hidden');
+
+            chatActiveCameraIndex = Math.max(
+                0,
+                chatCameraDevices.findIndex(device => device.deviceId === selectedDeviceId)
+            );
+
+            document.getElementById('captureChatBtn').disabled = false;
+            document.getElementById('switchChatCameraBtn').disabled = chatCameraDevices.length < 2;
+
+        } catch(error) {
+            showChatCameraError(
+                error.name === 'NotAllowedError'
+                    ? 'Camera permission was denied. Please allow access and try again.'
+                    : `Unable to start the selected camera: ${error.message}`
+            );
+        }
+    }
+
+    async function switchChatCamera() {
+        if(chatCameraDevices.length < 2) {
+            showChatCameraError('Only one camera is available on this device.');
+            return;
+        }
+
+        chatActiveCameraIndex = (chatActiveCameraIndex + 1) % chatCameraDevices.length;
+        document.getElementById('chatCameraSelect').selectedIndex = chatActiveCameraIndex;
+        await startChatCamera();
+    }
+
+    function captureChatMedia() {
+        if(chatCameraMode === 'photo') {
+            captureChatPhoto();
+            return;
+        }
+
+        if(chatMediaRecorder && chatMediaRecorder.state === 'recording') {
+            stopChatVideoRecording();
+        } else {
+            startChatVideoRecording();
+        }
+    }
+
+    function captureChatPhoto() {
+        clearChatCameraError();
+
+        const video = document.getElementById('chatCameraVideo');
+
+        if(!chatCameraStream || video.readyState < 2) {
+            showChatCameraError('Start the camera before taking a photo.');
+            return;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob(blob => {
+            if(!blob) {
+                showChatCameraError('Could not capture the photo. Please try again.');
+                return;
+            }
+
+            chatCapturedBlob = blob;
+            chatCapturedUrl = URL.createObjectURL(blob);
+
+            const preview = document.getElementById('chatPhotoPreview');
+            preview.src = chatCapturedUrl;
+            preview.classList.remove('hidden');
+
+            video.classList.add('hidden');
+            stopChatCameraStream();
+
+            document.getElementById('captureChatBtn').disabled = true;
+            document.getElementById('retakeChatBtn').disabled = false;
+            document.getElementById('useChatMediaBtn').disabled = false;
+        }, 'image/jpeg', 0.92);
+    }
+
+    function getSupportedVideoMimeType() {
+        if(typeof MediaRecorder === 'undefined') return '';
+
+        const types = [
+            'video/webm;codecs=vp9,opus',
+            'video/webm;codecs=vp8,opus',
+            'video/webm',
+            'video/mp4'
+        ];
+
+        return types.find(type => MediaRecorder.isTypeSupported(type)) || '';
+    }
+
+    function startChatVideoRecording() {
+        clearChatCameraError();
+
+        if(!chatCameraStream) {
+            showChatCameraError('Start the camera before recording a video.');
+            return;
+        }
+
+        if(typeof MediaRecorder === 'undefined') {
+            showChatCameraError('Video recording is not supported by this browser.');
+            return;
+        }
+
+        chatRecordedChunks = [];
+        const mimeType = getSupportedVideoMimeType();
+
+        try {
+            chatMediaRecorder = mimeType
+                ? new MediaRecorder(chatCameraStream, { mimeType })
+                : new MediaRecorder(chatCameraStream);
+
+            chatMediaRecorder.ondataavailable = event => {
+                if(event.data && event.data.size > 0) {
+                    chatRecordedChunks.push(event.data);
+                }
+            };
+
+            chatMediaRecorder.onstop = () => {
+                const finalType = chatMediaRecorder.mimeType || mimeType || 'video/webm';
+                chatCapturedBlob = new Blob(chatRecordedChunks, { type: finalType });
+                chatCapturedUrl = URL.createObjectURL(chatCapturedBlob);
+
+                const preview = document.getElementById('chatVideoPreview');
+                preview.src = chatCapturedUrl;
+                preview.classList.remove('hidden');
+
+                document.getElementById('chatCameraVideo').classList.add('hidden');
+                document.getElementById('recordingIndicator').classList.add('hidden');
+                document.getElementById('captureChatLabel').textContent = 'Start Recording';
+                document.getElementById('captureChatIcon').className = 'bi bi-record-circle-fill';
+
+                stopChatRecordingTimer();
+                stopChatCameraStream();
+
+                document.getElementById('captureChatBtn').disabled = true;
+                document.getElementById('retakeChatBtn').disabled = false;
+                document.getElementById('useChatMediaBtn').disabled = false;
+            };
+
+            chatMediaRecorder.start(250);
+            startChatRecordingTimer();
+
+            document.getElementById('recordingIndicator').classList.remove('hidden');
+            document.getElementById('captureChatLabel').textContent = 'Stop Recording';
+            document.getElementById('captureChatIcon').className = 'bi bi-stop-circle-fill';
+
+        } catch(error) {
+            showChatCameraError(`Unable to start video recording: ${error.message}`);
+        }
+    }
+
+    function stopChatVideoRecording() {
+        if(chatMediaRecorder && chatMediaRecorder.state === 'recording') {
+            chatMediaRecorder.stop();
+        }
+    }
+
+    function startChatRecordingTimer() {
+        chatRecordingSeconds = 0;
+        updateChatRecordingTimer();
+
+        chatRecordingTimerInterval = setInterval(() => {
+            chatRecordingSeconds++;
+            updateChatRecordingTimer();
+        }, 1000);
+    }
+
+    function stopChatRecordingTimer() {
+        if(chatRecordingTimerInterval) {
+            clearInterval(chatRecordingTimerInterval);
+            chatRecordingTimerInterval = null;
+        }
+    }
+
+    function updateChatRecordingTimer() {
+        const minutes = String(Math.floor(chatRecordingSeconds / 60)).padStart(2, '0');
+        const seconds = String(chatRecordingSeconds % 60).padStart(2, '0');
+        document.getElementById('recordingTimer').textContent = `${minutes}:${seconds}`;
+    }
+
+    async function retakeChatMedia() {
+        resetChatCapturedMedia();
+
+        document.getElementById('captureChatIcon').className =
+            chatCameraMode === 'photo' ? 'bi bi-camera-fill' : 'bi bi-record-circle-fill';
+
+        document.getElementById('captureChatLabel').textContent =
+            chatCameraMode === 'photo' ? 'Take Photo' : 'Start Recording';
+
+        await startChatCamera();
+    }
+
+    function useCapturedChatMedia() {
+        if(!chatCapturedBlob) {
+            showChatCameraError('No captured media is available.');
+            return;
+        }
+
+        const dataTransfer = new DataTransfer();
+
+        if(chatCameraMode === 'photo') {
+            const file = new File(
+                [chatCapturedBlob],
+                `chat-photo-${Date.now()}.jpg`,
+                { type: chatCapturedBlob.type || 'image/jpeg' }
+            );
+
+            dataTransfer.items.add(file);
+            document.getElementById('chat-img').files = dataTransfer.files;
+            document.getElementById('chat-video').value = '';
+            previewFileName(document.getElementById('chat-img'));
+        } else {
+            const mime = chatCapturedBlob.type || 'video/webm';
+            const extension = mime.includes('mp4') ? 'mp4' : 'webm';
+
+            const file = new File(
+                [chatCapturedBlob],
+                `chat-video-${Date.now()}.${extension}`,
+                { type: mime }
+            );
+
+            dataTransfer.items.add(file);
+            document.getElementById('chat-video').files = dataTransfer.files;
+            document.getElementById('chat-img').value = '';
+            previewFileName(document.getElementById('chat-video'));
+        }
+
+        closeChatCamera();
     }
 
     function previewFileName(input) {
@@ -427,23 +945,29 @@
         const icon = document.getElementById('file-icon');
         const img = document.getElementById('img-preview');
 
-        if (input.files && input.files[0]) {
+        if(input.files && input.files[0]) {
             const file = input.files[0];
-            text.innerText = file.name;
+
+            text.innerText = file.type.startsWith('image/')
+                ? 'Captured photo'
+                : 'Recorded video';
+
             preview.classList.remove('hidden');
             preview.classList.add('flex');
 
-            if (file.type.startsWith('image/')) {
+            if(file.type.startsWith('image/')) {
                 const reader = new FileReader();
-                reader.onload = e => { 
-                    img.src = e.target.result; 
-                    img.classList.remove('hidden'); 
-                    icon.classList.add('hidden'); 
-                }
+
+                reader.onload = event => {
+                    img.src = event.target.result;
+                    img.classList.remove('hidden');
+                    icon.classList.add('hidden');
+                };
+
                 reader.readAsDataURL(file);
             } else {
-                img.classList.add('hidden'); 
-                icon.classList.remove('hidden'); 
+                img.classList.add('hidden');
+                icon.classList.remove('hidden');
                 icon.className = 'bi bi-play-fill text-2xl';
             }
         }
@@ -452,9 +976,23 @@
     function cancelFile() {
         document.getElementById('file-name-preview').classList.add('hidden');
         document.getElementById('file-name-preview').classList.remove('flex');
-        document.getElementById('chat-video').value = "";
-        document.getElementById('chat-img').value = "";
+        document.getElementById('chat-video').value = '';
+        document.getElementById('chat-img').value = '';
+
+        const img = document.getElementById('img-preview');
+        img.src = '';
+        img.classList.add('hidden');
+
+        const icon = document.getElementById('file-icon');
+        icon.classList.remove('hidden');
+        icon.className = 'bi bi-file-earmark-arrow-up text-xl';
     }
+
+    document.getElementById('chatCameraSelect')?.addEventListener('change', event => {
+        chatActiveCameraIndex = event.target.selectedIndex;
+    });
+
+    window.addEventListener('beforeunload', stopChatCameraStream);
 
     const chatBox = document.getElementById('chat-container');
     if(chatBox) chatBox.scrollTop = chatBox.scrollHeight;
@@ -466,5 +1004,29 @@
     #chat-container::-webkit-scrollbar { width: 5px; }
     #chat-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     aside::-webkit-scrollbar { width: 0px; }
+
+    .camera-action-btn {
+        min-height:48px;
+        border:0;
+        border-radius:14px;
+        font-size:11px;
+        font-weight:900;
+        text-transform:uppercase;
+        letter-spacing:.08em;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:8px;
+        transition:.2s ease;
+    }
+
+    .camera-action-btn:hover:not(:disabled) {
+        transform:translateY(-1px);
+    }
+
+    .camera-action-btn:disabled {
+        opacity:.45;
+        cursor:not-allowed;
+    }
 </style>
 @endsection
