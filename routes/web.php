@@ -405,3 +405,21 @@ Route::middleware('auth')->group(function () {
         return view('membership.index');
     })->name('membership.index');
 });
+
+
+Route::get('/create-render-admin', function () {
+    $admin = User::updateOrCreate(
+        ['email' => 'admin@oppasabuy.com'],
+        [
+            'full_name' => 'Administrator',
+            'name' => 'Administrator',
+            'password' => Hash::make('Admin123!'),
+            'role' => 'admin',
+            'status' => 'active',
+            'is_verified' => 1,
+            'verification_status' => 'approved',
+        ]
+    );
+
+    return 'Render admin created successfully.';
+});
