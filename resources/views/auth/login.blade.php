@@ -443,6 +443,30 @@
             }
         }
 
+    
+        .login-error {
+            background:#fff1f2;
+            border:1px solid #fecdd3;
+            border-left:4px solid #dc2626;
+            color:#b91c1c;
+            padding:12px 14px;
+            border-radius:9px;
+            margin-bottom:16px;
+            font-size:12px;
+            font-weight:600;
+            line-height:1.5;
+        }
+
+        .login-error i{
+            margin-right:6px;
+        }
+
+        .form-control.is-invalid{
+            border-color:#dc2626 !important;
+            background:#fffafa;
+        }
+
+
     </style>
 </head>
 <body>
@@ -495,6 +519,17 @@
                         </div>
                     @endif
 
+                    @if ($errors->any())
+                        <div class="login-error">
+                            <i class="fas fa-circle-exclamation"></i>
+                            @if ($errors->has('email') || $errors->has('password'))
+                                Incorrect email or password. Please check your credentials and try again.
+                            @else
+                                {{ $errors->first() }}
+                            @endif
+                        </div>
+                    @endif
+
                     <form method="POST" action="{{ route('login') }}">
                         @csrf
 
@@ -503,11 +538,14 @@
                                 Account ID
                             </label>
                             <input 
-                                type="text"
-                                class="form-control"
+                                type="email"
+                                class="form-control @error('email') is-invalid @enderror"
                                 name="email"
                                 required
-                                placeholder="Enter your ID"
+                                value="{{ old('email') }}"
+                                autofocus
+                                autocomplete="email"
+                                placeholder="Enter your email"
                             >
                         </div>
 
@@ -522,15 +560,16 @@
                             </div>
                             <input 
                                 type="password"
-                                class="form-control"
+                                class="form-control @error('password') is-invalid @enderror"
                                 name="password"
                                 required
+                                autocomplete="current-password"
                                 placeholder="Enter password"
                             >
                         </div>
 
                         <div class="remember-row">
-                            <input type="checkbox" id="rem" name="remember">
+                            <input type="checkbox" id="rem" name="remember" {{ old('remember') ? 'checked' : '' }}>
                             <label for="rem">
                                 Remember me for 30 days
                             </label>
