@@ -59,18 +59,31 @@ Route::get('/contact', fn() => "Contact Page Coming Soon")->name('contact');
 | Authentication Routes
 |--------------------------------------------------------------------------
 */
+
 Route::middleware('guest')->group(function () {
-    $authRoute = "/auth";
-    Route::get("{$authRoute}/login", [AuthController::class, 'showLoginForm'])->name('login');
-    Route::get("{$authRoute}/register", [RegisterController::class, 'showRegistrationForm'])->name('register');
+    Route::get('/auth/login', [AuthController::class, 'showLoginForm'])
+        ->name('login');
+
+    Route::post('/auth/login', [AuthController::class, 'authenticate'])
+        ->name('login.authenticate');
+
+    Route::get('/auth/register', [RegisterController::class, 'showRegistrationForm'])
+        ->name('register');
+
+    Route::post('/auth/register', [RegisterController::class, 'register'])
+        ->name('register.submit');
 });
 
-Route::post('/auth/login', [AuthController::class, 'authenticate']);
-Route::post('/auth/register', [RegisterController::class, 'register']);
-Route::post('/auth/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
-Route::put('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
-Route::get('/registration-success', [RegisterController::class, 'loginSuccess'])->name('login.success')->middleware('auth');
+Route::post('/auth/logout', [AuthController::class, 'logout'])
+    ->name('logout')
+    ->middleware('auth');
 
+Route::put('/profile/update', [ProfileController::class, 'update'])
+    ->name('profile.update');
+
+Route::get('/registration-success', [RegisterController::class, 'loginSuccess'])
+    ->name('login.success')
+    ->middleware('auth');
 /*
 |--------------------------------------------------------------------------
 | Authenticated Routes

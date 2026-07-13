@@ -14,31 +14,38 @@ class AuthController extends Controller
     }
 
     public function authenticate(Request $request)
-    {
-        $credentials = $request->validate([
+{
+    $credentials = $request->validate(
+        [
             'email' => ['required', 'email'],
             'password' => ['required'],
-        ]);
+        ],
+        [
+            'email.required' => 'Please enter your email address.',
+            'email.email' => 'Please enter a valid email address.',
+            'password.required' => 'Please enter your password.',
+        ]
+    );
 
-        if (Auth::attempt($credentials, $request->has('remember'))) {
-            $request->session()->regenerate();
+    if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        $request->session()->regenerate();
 
-            $user = Auth::user();
-            
-            // Admins still go to the verification area
-            if ($user->role === 'admin') {
-                return redirect()->intended('/admin/verify');
-            }
+        $user = Auth::user();
 
-            // Both Sellers and Buyers now go straight to the Home page
-            return redirect()->intended('/home');
+        if ($user->role === 'admin') {
+            return redirect()->intended('/admin/verify');
         }
 
-        return back()->withErrors([
-            'email' => 'The provided credentials do not match our records.',
-        ])->onlyInput('email');
+        return redirect()->intended('/home');
     }
 
+    return redirect()
+        ->route('login')
+        ->withErrors([
+            'email' => 'Incorrect email or password. Please check your credentials and try again.',
+        ])
+        ->withInput($request->only('email'));
+}
     public function logout(Request $request)
     {
         Auth::logout();
