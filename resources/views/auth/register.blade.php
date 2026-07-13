@@ -272,28 +272,10 @@
                 display:none;
             }
         }
+    
+.camera-panel{border:2px solid #8ba7c8;border-radius:12px;padding:15px;background:#f8fafc}
 
-        /* ================= CAMERA CAPTURE ================= */
-        .camera-panel{border:2px solid #8ba7c8;border-radius:14px;padding:16px;background:#f8fafc}
-        .camera-select-row{display:grid;grid-template-columns:1fr auto;gap:10px;margin-bottom:12px}
-        .camera-select-row .form-select{width:100%}
-        .camera-stage{position:relative;width:100%;aspect-ratio:4/3;background:#111827;border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center}
-        .camera-stage video,.camera-stage canvas,.camera-stage img{width:100%;height:100%;object-fit:cover}
-        .camera-stage canvas,.camera-stage img{display:none}
-        .camera-placeholder{color:#d1d5db;text-align:center;padding:20px;font-size:13px}
-        .camera-placeholder i{display:block;font-size:38px;margin-bottom:10px}
-        .camera-controls{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
-        .camera-btn{border:none;border-radius:10px;min-height:44px;font-weight:800;font-size:13px;padding:10px 12px}
-        .camera-btn-primary{background:var(--blue);color:#fff}
-        .camera-btn-secondary{background:#e5e7eb;color:#1f2937}
-        .camera-btn-danger{background:#cf0000;color:#fff}
-        .camera-btn:disabled{opacity:.55;cursor:not-allowed}
-        .camera-status{margin-top:10px;font-size:12px;color:#6b7280;line-height:1.5}
-        .camera-error{margin-top:10px;padding:10px 12px;border-radius:10px;background:#fff1f2;border:1px solid #fecdd3;color:#b91c1c;font-size:12px;display:none}
-        .camera-fallback{margin-top:12px;padding-top:12px;border-top:1px solid #dbe3ec}
-        @media(max-width:576px){.camera-select-row,.camera-controls{grid-template-columns:1fr}}
-
-    </style>
+</style>
 </head>
 <body>
 
@@ -407,60 +389,29 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label"><i class="fa-solid fa-camera"></i> Take a Photo of Your Valid ID</label>
+                            <label class="form-label"><i class="fa-solid fa-camera"></i> Capture Valid ID</label>
 
                             <div class="camera-panel">
-                                <div class="camera-select-row">
-                                    <select id="cameraSelect" class="form-select" aria-label="Select camera">
-                                        <option value="">Select camera</option>
-                                    </select>
+                                <select id="cameraSelect" class="form-select mb-3"></select>
 
-                                    <button type="button" id="refreshCamerasBtn" class="camera-btn camera-btn-secondary" onclick="loadCameraDevices()">
-                                        <i class="fa-solid fa-rotate"></i> Refresh
-                                    </button>
+                                <video id="cameraVideo" autoplay playsinline style="width:100%;border-radius:12px;background:#000;"></video>
+
+                                <canvas id="cameraCanvas" style="display:none;"></canvas>
+
+                                <img id="capturedPreview" style="display:none;width:100%;border-radius:12px;">
+
+                                <div class="d-grid gap-2 mt-3">
+                                    <button type="button" class="btn btn-primary" onclick="startCamera()">Start Camera</button>
+                                    <button type="button" class="btn btn-danger" onclick="capturePhoto()">Take Photo</button>
+                                    <button type="button" class="btn btn-secondary" onclick="retakePhoto()">Retake</button>
                                 </div>
 
-                                <div class="camera-stage">
-                                    <div id="cameraPlaceholder" class="camera-placeholder">
-                                        <i class="fa-solid fa-camera"></i>
-                                        Select a camera, then press Start Camera.
-                                    </div>
+                                <small class="text-muted d-block mt-2">
+                                    Phones: choose front or rear camera.<br>
+                                    Laptop/Desktop: choose your webcam.
+                                </small>
 
-                                    <video id="cameraVideo" autoplay playsinline muted></video>
-                                    <canvas id="cameraCanvas"></canvas>
-                                    <img id="capturedPreview" src="" alt="Captured valid ID preview">
-                                </div>
-
-                                <div class="camera-controls">
-                                    <button type="button" id="startCameraBtn" class="camera-btn camera-btn-primary" onclick="startSelectedCamera()">
-                                        <i class="fa-solid fa-video"></i> Start Camera
-                                    </button>
-
-                                    <button type="button" id="switchCameraBtn" class="camera-btn camera-btn-secondary" onclick="switchCamera()" disabled>
-                                        <i class="fa-solid fa-camera-rotate"></i> Switch Camera
-                                    </button>
-
-                                    <button type="button" id="captureBtn" class="camera-btn camera-btn-danger" onclick="captureValidIdPhoto()" disabled>
-                                        <i class="fa-solid fa-camera"></i> Take Photo
-                                    </button>
-
-                                    <button type="button" id="retakeBtn" class="camera-btn camera-btn-secondary" onclick="retakeValidIdPhoto()" disabled>
-                                        <i class="fa-solid fa-arrow-rotate-left"></i> Retake
-                                    </button>
-                                </div>
-
-                                <div id="cameraStatus" class="camera-status">
-                                    On phones, choose the front or rear camera. On laptops and desktops, select an available webcam.
-                                </div>
-
-                                <div id="cameraError" class="camera-error"></div>
-
-                                <div class="camera-fallback">
-                                    <label class="form-label mb-2">Camera unavailable? Choose an image instead</label>
-                                    <input type="file" class="form-control" id="buyerValidIdFallback" accept="image/*" onchange="useFallbackImage(event)">
-                                </div>
-
-                                <input type="file" id="buyerValidId" name="buyer_valid_id" accept="image/*" required hidden>
+                                <input type="file" id="buyer_valid_id" name="buyer_valid_id" hidden required>
                             </div>
                         </div>
                     </div>
@@ -528,328 +479,75 @@
 </div>
 
 <script>
-let currentStep = 1;
-let cameraStream = null;
-let cameraDevices = [];
-let activeCameraIndex = 0;
-let capturedPhotoUrl = null;
+let currentStep=1,cameraStream=null,cameras=[];
 
-const cameraSelect = document.getElementById('cameraSelect');
-const cameraVideo = document.getElementById('cameraVideo');
-const cameraCanvas = document.getElementById('cameraCanvas');
-const capturedPreview = document.getElementById('capturedPreview');
-const cameraPlaceholder = document.getElementById('cameraPlaceholder');
-const switchCameraBtn = document.getElementById('switchCameraBtn');
-const captureBtn = document.getElementById('captureBtn');
-const retakeBtn = document.getElementById('retakeBtn');
-const cameraStatus = document.getElementById('cameraStatus');
-const cameraError = document.getElementById('cameraError');
-const buyerValidId = document.getElementById('buyerValidId');
-const buyerValidIdFallback = document.getElementById('buyerValidIdFallback');
-
-function showCameraError(message){
-    cameraError.textContent = message;
-    cameraError.style.display = 'block';
+async function loadCameras(){
+ const devices=await navigator.mediaDevices.enumerateDevices();
+ cameras=devices.filter(d=>d.kind==='videoinput');
+ const sel=document.getElementById('cameraSelect');
+ sel.innerHTML='';
+ cameras.forEach((c,i)=>{
+   sel.innerHTML+=`<option value="${c.deviceId}">${c.label||'Camera '+(i+1)}</option>`;
+ });
 }
 
-function clearCameraError(){
-    cameraError.textContent = '';
-    cameraError.style.display = 'none';
+async function startCamera(){
+ if(!navigator.mediaDevices)return alert('Camera not supported.');
+ if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());
+ const id=document.getElementById('cameraSelect').value;
+ cameraStream=await navigator.mediaDevices.getUserMedia({video:{deviceId:id?{exact:id}:undefined}});
+ document.getElementById('cameraVideo').srcObject=cameraStream;
 }
 
-function stopCamera(){
-    if(cameraStream){
-        cameraStream.getTracks().forEach(track => track.stop());
-        cameraStream = null;
-    }
-    cameraVideo.srcObject = null;
-    captureBtn.disabled = true;
+function capturePhoto(){
+ const video=document.getElementById('cameraVideo');
+ const canvas=document.getElementById('cameraCanvas');
+ canvas.width=video.videoWidth;
+ canvas.height=video.videoHeight;
+ canvas.getContext('2d').drawImage(video,0,0);
+ canvas.toBlob(blob=>{
+   const file=new File([blob],'valid-id.jpg',{type:'image/jpeg'});
+   const dt=new DataTransfer();
+   dt.items.add(file);
+   document.getElementById('buyer_valid_id').files=dt.files;
+   const url=URL.createObjectURL(blob);
+   const img=document.getElementById('capturedPreview');
+   img.src=url;
+   img.style.display='block';
+   video.style.display='none';
+ });
 }
-
-async function requestCameraPermission(){
-    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-        throw new Error('Camera access is not supported by this browser.');
-    }
-
-    const permissionStream = await navigator.mediaDevices.getUserMedia({video:true,audio:false});
-    permissionStream.getTracks().forEach(track => track.stop());
-}
-
-async function loadCameraDevices(){
-    clearCameraError();
-
-    try{
-        await requestCameraPermission();
-
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        cameraDevices = devices.filter(device => device.kind === 'videoinput');
-        cameraSelect.innerHTML = '';
-
-        if(cameraDevices.length === 0){
-            cameraSelect.innerHTML = '<option value="">No camera found</option>';
-            switchCameraBtn.disabled = true;
-            throw new Error('No camera was detected on this device.');
-        }
-
-        cameraDevices.forEach((device, index) => {
-            const option = document.createElement('option');
-            option.value = device.deviceId;
-
-            const label = device.label || `Camera ${index + 1}`;
-            const lower = label.toLowerCase();
-
-            if(lower.includes('front') || lower.includes('user')){
-                option.textContent = `${label} (Front)`;
-            }else if(lower.includes('back') || lower.includes('rear') || lower.includes('environment')){
-                option.textContent = `${label} (Rear)`;
-            }else{
-                option.textContent = label;
-            }
-
-            cameraSelect.appendChild(option);
-        });
-
-        activeCameraIndex = 0;
-        cameraSelect.selectedIndex = 0;
-        switchCameraBtn.disabled = cameraDevices.length < 2;
-        cameraStatus.textContent = `${cameraDevices.length} camera${cameraDevices.length > 1 ? 's' : ''} detected. Select one and press Start Camera.`;
-    }catch(error){
-        cameraStatus.textContent = 'Camera could not be started.';
-        showCameraError(
-            error.name === 'NotAllowedError'
-                ? 'Camera permission was denied. Allow camera access in your browser settings, then press Refresh.'
-                : error.message
-        );
-    }
-}
-
-async function startSelectedCamera(){
-    clearCameraError();
-    stopCamera();
-
-    try{
-        if(cameraDevices.length === 0){
-            await loadCameraDevices();
-        }
-
-        const selectedDeviceId = cameraSelect.value;
-
-        if(!selectedDeviceId){
-            throw new Error('Please select a camera first.');
-        }
-
-        cameraStream = await navigator.mediaDevices.getUserMedia({
-            video:{
-                deviceId:{exact:selectedDeviceId},
-                width:{ideal:1280},
-                height:{ideal:720}
-            },
-            audio:false
-        });
-
-        cameraVideo.srcObject = cameraStream;
-        await cameraVideo.play();
-
-        cameraPlaceholder.style.display = 'none';
-        capturedPreview.style.display = 'none';
-        cameraCanvas.style.display = 'none';
-        cameraVideo.style.display = 'block';
-
-        activeCameraIndex = Math.max(0, cameraDevices.findIndex(device => device.deviceId === selectedDeviceId));
-        captureBtn.disabled = false;
-        retakeBtn.disabled = true;
-        switchCameraBtn.disabled = cameraDevices.length < 2;
-        cameraStatus.textContent = 'Camera is ready. Position the ID clearly, then press Take Photo.';
-    }catch(error){
-        cameraPlaceholder.style.display = 'block';
-        cameraVideo.style.display = 'none';
-        showCameraError(
-            error.name === 'NotAllowedError'
-                ? 'Camera permission was denied. Please allow camera access and try again.'
-                : `Unable to start the selected camera: ${error.message}`
-        );
-    }
-}
-
-async function switchCamera(){
-    if(cameraDevices.length < 2){
-        showCameraError('Only one camera is available on this device.');
-        return;
-    }
-
-    activeCameraIndex = (activeCameraIndex + 1) % cameraDevices.length;
-    cameraSelect.selectedIndex = activeCameraIndex;
-    await startSelectedCamera();
-}
-
-function captureValidIdPhoto(){
-    clearCameraError();
-
-    if(!cameraStream || cameraVideo.readyState < 2){
-        showCameraError('Start the camera before taking a photo.');
-        return;
-    }
-
-    const width = cameraVideo.videoWidth;
-    const height = cameraVideo.videoHeight;
-
-    if(!width || !height){
-        showCameraError('The camera is still loading. Please wait and try again.');
-        return;
-    }
-
-    cameraCanvas.width = width;
-    cameraCanvas.height = height;
-    cameraCanvas.getContext('2d').drawImage(cameraVideo, 0, 0, width, height);
-
-    cameraCanvas.toBlob(blob => {
-        if(!blob){
-            showCameraError('Could not capture the photo. Please try again.');
-            return;
-        }
-
-        const file = new File([blob], `buyer-valid-id-${Date.now()}.jpg`, {type:'image/jpeg'});
-        const transfer = new DataTransfer();
-        transfer.items.add(file);
-        buyerValidId.files = transfer.files;
-
-        if(capturedPhotoUrl){
-            URL.revokeObjectURL(capturedPhotoUrl);
-        }
-
-        capturedPhotoUrl = URL.createObjectURL(blob);
-        capturedPreview.src = capturedPhotoUrl;
-
-        cameraVideo.style.display = 'none';
-        cameraCanvas.style.display = 'none';
-        capturedPreview.style.display = 'block';
-        cameraPlaceholder.style.display = 'none';
-
-        captureBtn.disabled = true;
-        retakeBtn.disabled = false;
-        cameraStatus.textContent = 'Photo captured successfully. Continue or press Retake.';
-        stopCamera();
-    }, 'image/jpeg', 0.92);
-}
-
-async function retakeValidIdPhoto(){
-    buyerValidId.value = '';
-    buyerValidIdFallback.value = '';
-    capturedPreview.src = '';
-    capturedPreview.style.display = 'none';
-    cameraPlaceholder.style.display = 'block';
-    retakeBtn.disabled = true;
-    cameraStatus.textContent = 'Select a camera and press Start Camera to retake the photo.';
-    await startSelectedCamera();
-}
-
-function useFallbackImage(event){
-    clearCameraError();
-
-    const file = event.target.files[0];
-    if(!file) return;
-
-    if(!file.type.startsWith('image/')){
-        showCameraError('Please choose a valid image file.');
-        event.target.value = '';
-        return;
-    }
-
-    stopCamera();
-
-    const transfer = new DataTransfer();
-    transfer.items.add(file);
-    buyerValidId.files = transfer.files;
-
-    if(capturedPhotoUrl){
-        URL.revokeObjectURL(capturedPhotoUrl);
-    }
-
-    capturedPhotoUrl = URL.createObjectURL(file);
-    capturedPreview.src = capturedPhotoUrl;
-    cameraVideo.style.display = 'none';
-    cameraCanvas.style.display = 'none';
-    capturedPreview.style.display = 'block';
-    cameraPlaceholder.style.display = 'none';
-    captureBtn.disabled = true;
-    retakeBtn.disabled = false;
-    cameraStatus.textContent = 'Image selected successfully.';
+function retakePhoto(){
+ document.getElementById('capturedPreview').style.display='none';
+ document.getElementById('cameraVideo').style.display='block';
+ startCamera();
 }
 
 function validateStep(step){
-    let isValid = true;
-
-    document.querySelectorAll(`#step${step} [required]`).forEach(field => {
-        if(field.type === 'file'){
-            if(!field.files || field.files.length === 0){
-                isValid = false;
-            }
-        }else if(field.type === 'checkbox'){
-            if(!field.checked){
-                isValid = false;
-            }
-        }else if(field.value.trim() === ''){
-            field.style.borderColor = '#cf0000';
-            isValid = false;
-        }else{
-            field.style.borderColor = '#8ba7c8';
-        }
-    });
-
-    if(step === 1){
-        const pass = document.querySelector('[name="password"]').value;
-        const confirm = document.querySelector('[name="password_confirmation"]').value;
-
-        if(pass !== confirm){
-            alert('Password and Confirm Password do not match.');
-            isValid = false;
-        }
-    }
-
-    if(step === 2 && (!buyerValidId.files || buyerValidId.files.length === 0)){
-        showCameraError('Please take a photo of your valid ID before continuing.');
-        isValid = false;
-    }
-
-    if(!isValid){
-        alert(`Please complete all required fields in Step ${step}.`);
-    }
-
-    return isValid;
+ let ok=true;
+ document.querySelectorAll(`#step${step} [required]`).forEach(f=>{
+  if(f.type==='file'){if(!f.files.length)ok=false;}
+  else if(f.type==='checkbox'){if(!f.checked)ok=false;}
+  else if(!f.value.trim())ok=false;
+ });
+ if(step===1){
+  const p=document.querySelector('[name=password]').value;
+  const c=document.querySelector('[name=password_confirmation]').value;
+  if(p!==c){alert('Password and Confirm Password do not match.');ok=false;}
+ }
+ if(!ok)alert(`Please complete all required fields in Step ${step}.`);
+ return ok;
 }
-
 function showStep(step){
-    document.querySelectorAll('.form-step').forEach(el => el.classList.remove('active'));
-    document.getElementById('step' + step).classList.add('active');
-
-    document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
-
-    for(let i = 1; i <= step; i++){
-        document.getElementById('indicator' + i).classList.add('active');
-    }
-
-    currentStep = step;
-
-    if(step === 2 && cameraDevices.length === 0){
-        loadCameraDevices();
-    }
+ document.querySelectorAll('.form-step').forEach(e=>e.classList.remove('active'));
+ document.getElementById('step'+step).classList.add('active');
+ document.querySelectorAll('.step').forEach(e=>e.classList.remove('active'));
+ for(let i=1;i<=step;i++)document.getElementById('indicator'+i).classList.add('active');
+ currentStep=step;
+ if(step===2)loadCameras();
 }
-
-function nextStep(step){
-    if(validateStep(currentStep)){
-        showStep(step);
-    }
-}
-
-function prevStep(step){
-    showStep(step);
-}
-
-cameraSelect.addEventListener('change', () => {
-    activeCameraIndex = cameraSelect.selectedIndex;
-});
-
-window.addEventListener('beforeunload', stopCamera);
+function nextStep(s){if(validateStep(currentStep))showStep(s);}
+function prevStep(s){showStep(s);}
 </script>
 
 </body>
